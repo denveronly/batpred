@@ -1,5 +1,6 @@
 {
   "name" : "predbat",
   "render_readme" : true,
-  "persistent_directory" : "config"
+  "persistent_directory" : "config",
+  "category" : "appdaemon"
 }
