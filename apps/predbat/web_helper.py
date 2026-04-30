@@ -7979,6 +7979,7 @@ setTimeout(function() {
 <a href='./components'>Components</a>
 <a href='./apps_editor'>Editor</a>
 <a href='./browse'>Browse</a>
+<a href='./oree'>OREE</a>
 <a href='./internals'>Internals</a>
 <a href='./metrics_dashboard'>Metrics</a>
 <a href='https://springfall2008.github.io/batpred/'>Docs</a>

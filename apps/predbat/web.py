@@ -241,6 +241,7 @@ class WebInterface(ComponentBase):
         app.router.add_get("/api/entities", self.html_api_get_entities)
         app.router.add_post("/api/login", self.html_api_login)
         app.router.add_get("/browse", self.html_browse)
+        app.router.add_get("/oree", self.html_oree)
         app.router.add_get("/download", self.html_download_file)
         app.router.add_get("/internals", self.html_internals)
         app.router.add_get("/api/internals", self.html_api_internals)
@@ -4698,6 +4699,69 @@ document.addEventListener('DOMContentLoaded', function() {
                 text += '<div class="error">Permission denied accessing directory</div>\n'
             except Exception as e:
                 text += f'<div class="error">Error listing directory: {str(e)}</div>\n'
+
+        text += "</body></html>\n"
+        return web.Response(content_type="text/html", text=text)
+
+    async def html_oree(self, request):
+        """Return the OREE Day-Ahead Market prices page showing today's 24 hourly prices."""
+        self.default_page = "./oree"
+        text = self.get_header("OREE Prices", refresh=3600)
+        text += "<body>\n"
+        text += """<style>
+.oree-table { border-collapse: collapse; width: 480px; margin: 20px 0; }
+.oree-table th, .oree-table td { border: 1px solid #555; padding: 8px 14px; text-align: center; }
+.oree-table th { background: #333; color: #fff; }
+.oree-past { color: #888; }
+.oree-current { background: #2e7d32; color: #fff; font-weight: bold; }
+.oree-future { }
+.oree-stats { margin: 8px 0 20px 0; font-size: 0.95em; }
+body.dark-mode .oree-table th { background: #222; }
+body.dark-mode .oree-current { background: #1b5e20; }
+</style>\n"""
+
+        sensor_prefix = self.get_arg("metric_oree_import", None, indirect=False)
+        if not sensor_prefix:
+            text += "<p>OREE not configured &mdash; add <code>metric_oree_import: sensor.oree_dam_hour</code> to <em>apps.yaml</em>.</p>\n"
+            text += "</body></html>\n"
+            return web.Response(content_type="text/html", text=text)
+
+        current_hour = self.minutes_now // 60  # 0-23
+
+        prices = []
+        for hour in range(1, 25):
+            state = self.base.get_state_wrapper(entity_id=f"{sensor_prefix}_{hour}", default=None)
+            try:
+                prices.append(float(state))
+            except (ValueError, TypeError):
+                prices.append(None)
+
+        today_str = (self.midnight_utc).strftime("%d.%m.%Y")
+        text += f"<h2>OREE DAM Prices &mdash; {today_str}</h2>\n"
+        text += "<table class='oree-table'>\n"
+        text += "<thead><tr><th>Hour</th><th>Window</th><th>UAH / MWh</th></tr></thead>\n"
+        text += "<tbody>\n"
+
+        for i, price in enumerate(prices):
+            hour_label = i + 1
+            time_str = f"{i:02d}:00 &ndash; {hour_label:02d}:00"
+            price_str = f"{price:,.2f}" if price is not None else "N/A"
+
+            if i < current_hour:
+                row_class = "oree-past"
+            elif i == current_hour:
+                row_class = "oree-current"
+            else:
+                row_class = "oree-future"
+
+            text += f"<tr class='{row_class}'><td>{hour_label}</td><td>{time_str}</td><td>{price_str}</td></tr>\n"
+
+        text += "</tbody></table>\n"
+
+        valid = [p for p in prices if p is not None]
+        if valid:
+            avg = sum(valid) / len(valid)
+            text += f"<div class='oree-stats'>Min: <b>{min(valid):,.2f}</b> &nbsp;|&nbsp; Max: <b>{max(valid):,.2f}</b> &nbsp;|&nbsp; Avg: <b>{avg:,.2f}</b> UAH/MWh</div>\n"
 
         text += "</body></html>\n"
         return web.Response(content_type="text/html", text=text)

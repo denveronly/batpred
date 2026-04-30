@@ -74,6 +74,7 @@ from utils import minutes_since_yesterday, dp1, dp2, dp3
 from predheat import PredHeat
 from octopus import Octopus
 from energydataservice import Energidataservice
+from oree import Oree
 from components import Components
 from execute import Execute
 from marginal import Marginal
@@ -85,7 +86,7 @@ from compare import Compare
 from plugin_system import PluginSystem
 
 
-class PredBat(hass.Hass, Octopus, Energidataservice, Fetch, Plan, Marginal, Execute, Output, UserInterface):
+class PredBat(hass.Hass, Octopus, Energidataservice, Oree, Fetch, Plan, Marginal, Execute, Output, UserInterface):
     """Main PredBat orchestrator combining all subsystems via multiple inheritance.
 
     Inherits from Hass (HA interface), Octopus (rate loading), Energidataservice,
